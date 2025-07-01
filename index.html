@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BiologyBot - Trợ lý Sinh học thông minh</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #66ea73 0%, #5ca24b 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .chat-container {
+            width: 100%;
+            max-width: 900px;
+            height: 700px;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .chat-header {
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            padding: 20px 30px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .chat-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            animation: shimmer 3s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { left: -100%; }
+            100% { left: 100%; }
+        }
+
+        .chat-header h1 {
+            font-size: 2.2em;
+            margin-bottom: 8px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .chat-header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        .chat-messages {
+            flex: 1;
+            padding: 30px;
+            overflow-y: auto;
+            background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+        }
+
+        .message {
+            margin-bottom: 20px;
+            animation: fadeInUp 0.5s ease-out;
+        }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message.user {
+            text-align: right;
+        }
+
+        .message.bot {
+            text-align: left;
+        }
+
+        .message-content {
+            display: inline-block;
+            max-width: 80%;
+            padding: 15px 20px;
+            border-radius: 18px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+        }
+
+        .message.user .message-content {
+            background: linear-gradient(135deg, #007bff, #0056b3);
+            color: white;
+            border-bottom-right-radius: 5px;
+        }
+
+        .message.bot .message-content {
+            background: white;
+            color: #333;
+            border: 1px solid #e0e0e0;
+            border-bottom-left-radius: 5px;
+        }
+
+        .chat-input-container {
+            padding: 25px 30px;
+            background: white;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 25px;
+            font-size: 16px;
+            outline: none;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+
+        .chat-input:focus {
+            border-color: #4CAF50;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+        }
+
+        .send-button {
+            padding: 15px 25px;
+            background: linear-gradient(135deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            border-radius: 25px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.3);
+        }
+
+        .send-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(76, 175, 80, 0.4);
+        }
+
+        .send-button:active {
+            transform: translateY(0);
+        }
+
+        .typing-indicator {
+            display: none;
+            padding: 15px 20px;
+            background: white;
+            border-radius: 18px;
+            border-bottom-left-radius: 5px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            max-width: 80px;
+            margin-bottom: 20px;
+        }
+
+        .typing-dots {
+            display: flex;
+            gap: 4px;
+        }
+
+        .typing-dots span {
+            width: 8px;
+            height: 8px;
+            background: #4CAF50;
+            border-radius: 50%;
+            animation: typing 1.5s infinite;
+        }
+
+        .typing-dots span:nth-child(2) {
+            animation-delay: 0.2s;
+        }
+
+        .typing-dots span:nth-child(3) {
+            animation-delay: 0.4s;
+        }
+
+        @keyframes typing {
+            0%, 60%, 100% {
+                transform: translateY(0);
+                opacity: 0.4;
+            }
+            30% {
+                transform: translateY(-10px);
+                opacity: 1;
+            }
+        }
+
+        .welcome-message {
+            text-align: center;
+            color: #666;
+            font-style: italic;
+            margin: 50px 0;
+        }
+
+        .topic-suggestions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 20px;
+            justify-content: center;
+        }
+
+        .topic-btn {
+            padding: 8px 16px;
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border: 1px solid #2196f3;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #1976d2;
+            transition: all 0.3s ease;
+        }
+
+        .topic-btn:hover {
+            background: linear-gradient(135deg, #2196f3, #1976d2);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(33, 150, 243, 0.3);
+        }
+
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #4CAF50;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #45a049;
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 90vh;
+                margin: 10px;
+            }
+            
+            .chat-header h1 {
+                font-size: 1.8em;
+            }
+            
+            .message-content {
+                max-width: 90%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="chat-container">
+        <div class="chat-header">
+            <h1>🧬 BiologyBot</h1>
+            <p>Trợ lý sinh học thông minh - Chuyên gia kiến thức sinh học cơ bản</p>
+        </div>
+        
+        <div class="chat-messages" id="chatMessages">
+            <div class="welcome-message">
+                <h3>Chào mừng bạn đến với BiologyBot! 🌿</h3>
+                <p>Tôi là trợ lý AI chuyên về sinh học phổ thông. Hãy hỏi tôi bất kỳ câu hỏi nào về:</p>
+                <div class="topic-suggestions">
+                    <div class="topic-btn" onclick="askQuestion('Cây cần gì để sống?')">Cây cần gì để sống</div>
+                    <div class="topic-btn" onclick="askQuestion('Động vật ăn gì?')">Động vật ăn gì</div>
+                    <div class="topic-btn" onclick="askQuestion('Các bộ phận cơ thể người')">Cơ thể người</div>
+                    <!-- Kiến thức THCS -->
+                    <div class="topic-btn" onclick="askQuestion('Hệ tuần hoàn là gì?')">Hệ tuần hoàn</div>
+                    <div class="topic-btn" onclick="askQuestion('Quá trình tiêu hóa')">Tiêu hóa</div>
+                    <div class="topic-btn" onclick="askQuestion('Sinh sản ở thực vật')">Sinh sản thực vật</div>
+                    <!-- Kiến thức THPT -->
+                    <div class="topic-btn" onclick="askQuestion('Thế nào là quá trình nguyên phân?')">Nguyên phân</div>
+                    <div class="topic-btn" onclick="askQuestion('Giải thích về định luật Mendel')">Định luật Mendel</div>
+                    <div class="topic-btn" onclick="askQuestion('ADN và ARN khác nhau như thế nào?')">ADN & ARN</div>
+                    <div class="topic-btn" onclick="askQuestion('Quá trình hô hấp tế bào')">Hô hấp tế bào</div>
+                    <div class="topic-btn" onclick="askQuestion('Thế nào là quang hợp?')">Quang hợp</div>
+                    <div class="topic-btn" onclick="askQuestion('Giải thích về tiến hóa')">Tiến hóa</div>
+                </div>
+            </div>
+            
+            <div class="typing-indicator" id="typingIndicator">
+                <div class="typing-dots">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat-input-container">
+            <input type="text" class="chat-input" id="chatInput" placeholder="Hãy hỏi tôi về kiến thức sinh học từ lớp 1 đến lớp 12..." onkeypress="handleKeyPress(event)">
+            <button class="send-button" onclick="sendMessage()">Gửi</button>
+        </div>
+    </div>
+
+    <script>
+        const biologyKnowledge = {
+            // ===== KIẾN THỨC TIỂU HỌC (LỚP 1-5) =====
+            
+            // Lớp 1-2: Nhận biết cơ bản
+            "cây": "Cây là sinh vật sống. Cây cần nước, ánh nắng, không khí và đất để sống. Cây có rễ, thân, lá, hoa và quả. Cây cho chúng ta không khí trong lành và thực phẩm.",
+            
+            "động vật": "Động vật là sinh vật sống có thể di chuyển. Có động vật hoang dã và động vật nuôi. Động vật cần thức ăn, nước, không khí và chỗ ở để sống.",
+            
+            "cơ thể": "Cơ thể người có nhiều bộ phận: đầu, cổ, thân, tay, chân. Chúng ta có 5 giác quan: mắt (nhìn), tai (nghe), mũi (ngửi), miệng (nếm), da (sờ).",
+            
+            // Lớp 3-4: Hiểu biết sâu hơn
+            "sinh vật": "Sinh vật gồm thực vật và động vật. Đặc điểm chung: sinh trưởng, sinh sản, cần dinh dưỡng, thích ứng với môi trường. Sinh vật sống phụ thuộc lẫn nhau.",
+            
+            "thực vật": "Thực vật gồm cây gỗ, cây bụi, cây thảo. Bộ phận: rễ (hút nước), thân (dẫn truyền), lá (quang hợp), hoa (sinh sản), quả (bảo vệ hạt).",
+            
+            "môi trường": "Môi trường sống của sinh vật gồm: nước, đất, không khí, ánh sáng. Sinh vật thích ứng với môi trường để tồn tại. Con người cần bảo vệ môi trường.",
+            
+            // Lớp 5: Kiến thức tổng hợp
+            "dinh dưỡng": "Sinh vật cần dinh dưỡng để sống. Thực vật tự tạo thức ăn bằng quang hợp. Động vật ăn thực vật hoặc động vật khác. Chuỗi thức ăn: thực vật → động vật ăn cỏ → động vật ăn thịt.",
+            
+            "sinh sản": "Sinh vật sinh sản để tạo ra thế hệ mới. Thực vật: từ hạt nảy mầm thành cây con. Động vật: đẻ trứng hoặc đẻ con. Con người sinh con để duy trì nòi giống.",
+            
+            // ===== KIẾN THỨC TRUNG HỌC CƠ SỞ (LỚP 6-9) =====
+            
+            // Lớp 6: Sinh học cơ bản
+            "tế bào cơ bản": "Tất cả sinh vật đều được tạo thành từ tế bào. Tế bào là đơn vị nhỏ nhất của sự sống. Tế bào thực vật có vách tế bào, tế bào động vật không có.",
+            
+            "quang hợp cơ bản": "Quang hợp là quá trình cây xanh dùng ánh sáng mặt trời, nước và khí CO2 để tạo ra thức ăn (đường) và khí O2. Diễn ra ở lá cây.",
+            
+            // Lớp 7: Sinh học thực vật
+            "rễ": "Rễ có chức năng: hút nước và muối khoáng từ đất, giữ cây vững trên đất, tích trữ chất dinh dưỡng. Có 2 loại: rễ chính (cà rót) và rễ chùm (lúa).",
+            
+            "thân": "Thân có chức năng: đỡ lá và hoa quả, dẫn truyền nước và chất dinh dưỡng, tích trữ chất dinh dưỡng. Gồm thân thảo và thân gỗ.",
+            
+            "lá": "Lá có chức năng chính là quang hợp. Cấu tạo: phiến lá, cuống lá, gân lá. Khí khổng giúp trao đổi khí và thoát hơi nước.",
+            
+            "hoa": "Hoa là cơ quan sinh sản của thực vật. Cấu tạo: đài hoa, tràng hoa, nhị đực, nhị cái. Quá trình: thụ phấn → thụ tinh → tạo hạt.",
+            
+            // Lớp 8: Sinh học động vật
+            "tiêu hóa": "Hệ tiêu hóa gồm: miệng, thực quản, dạ dày, ruột non, ruột già. Chức năng: nghiền nát, tiêu hóa thức ăn thành chất dinh dưỡng hấp thụ vào máu.",
+            
+            "tuần hoàn": "Hệ tuần hoàn gồm tim và mạch máu. Tim bơm máu đi khắp cơ thể. Máu vận chuyển O2, CO2, chất dinh dưỡng và chất thải.",
+            
+            "hô hấp": "Hệ hô hấp gồm: mũi, họng, khí quản, phế quản, phổi. Chức năng: trao đổi khí O2 và CO2 giữa cơ thể và môi trường.",
+            
+            "bài tiết": "Hệ bài tiết gồm: thận, niệu quản, bàng quang, niệu đạo. Chức năng loại bỏ chất thải ra khỏi cơ thể, điều hòa nước và muối.",
+            
+            // Lớp 9: Sinh học tổng hợp
+            "sinh thái cơ bản": "Sinh thái học nghiên cứu mối quan hệ giữa sinh vật với nhau và với môi trường. Chuỗi thức ăn, lưới thức ăn, cân bằng sinh thái.",
+            
+            "bảo vệ môi trường": "Con người cần bảo vệ môi trường bằng cách: không xả rác, tiết kiệm nước điện, trồng cây xanh, không săn bắt động vật quý hiếm.",
+            
+            // ===== KIẾN THỨC TRUNG HỌC PHỔ THÔNG (LỚP 10-12) =====
+            
+            // Lớp 10: Tế bào học và sinh lý
+            "tế bào": "Tế bào là đơn vị cơ bản của sự sống. Có hai loại tế bào chính: tế bào nhân thực (có màng nhân) và tế bào nhân sơ (không có màng nhân). Tế bào thực vật có thêm thành tế bào và lục lạp.",
+            
+            "enzyme": "Enzyme là protein có chức năng xúc tác sinh học. Đặc điểm: đặc hiệu cao, hiệu quả cao, bị ảnh hưởng bởi nhiệt độ và pH. Cơ chế: enzyme + cơ chất → phức hợp enzyme-cơ chất → sản phẩm + enzyme.",
+            
+            "quang hợp": "Quang hợp là quá trình chuyển hóa CO2 và H2O thành glucose nhờ ánh sáng và diệp lục. Gồm 2 pha:\n- Pha sáng: tách H2O, tạo ATP và NADPH\n- Pha tối: cố định CO2 thành glucose theo chu trình Calvin\nÝ nghĩa: tạo O2, thức ăn cho sinh vật.",
+            
+            "hô hấp": "Hô hấp tế bào là quá trình phân giải glucose để tạo ATP. Gồm 3 giai đoạn:\n1. Đường phân (cytoplasm): glucose → pyruvat + 2ATP\n2. Chu trình Krebs (ti thể): pyruvat → CO2 + NADH\n3. Chuỗi truyền electron: NADH → ATP + H2O\nTổng: 1 glucose → 36-38 ATP",
+            
+            // Lớp 11: Di truyền học
+            "nguyên phân": "Nguyên phân là quá trình phân chia tế bào tạo ra 2 tế bào con có bộ nhiễm sắc thể giống hệt tế bào mẹ. Gồm các pha: kỳ đầu, kỳ giữa, kỳ sau, kỳ cuối. Ý nghĩa: tăng số lượng tế bào, duy trì bộ NST đặc trưng của loài.",
+            
+            "giảm phân": "Giảm phân là quá trình phân chia tế bào tạo ra 4 giao tử có bộ NST đơn bội (n) từ tế bào sinh dục có bộ NST lưỡng bội (2n). Gồm 2 lần phân chia liên tiếp. Ý nghĩa: tạo giao tử cho sinh sản hữu tính, tạo biến dị tổ hợp.",
+            
+            "mendel": "Định luật Mendel gồm 3 định luật cơ bản:\n1. Định luật phân ly: Mỗi tính trạng do một cặp gen quy định, các alen phân ly độc lập trong giảm phân\n2. Định luật phân ly độc lập: Các cặp gen quy định các tính trạng khác nhau phân ly độc lập\n3. Định luật trội lặn: Alen trội che lấp biểu hiện của alen lặn",
+            
+            "adn": "ADN (Axit Deoxiribonucleic) là vật chất di truyền chính của tế bào. Cấu trúc: chuỗi xoắn kép, mỗi mạch gồm các nucleotid (A-T, G-C). Chức năng: lưu trữ thông tin di truyền, tự nhân đôi, điều hòa hoạt động tế bào.",
+            
+            "arn": "ARN (Axit Ribonucleic) gồm có: mARN (truyền thông tin), tARN (vận chuyển aa), rARN (cấu trúc ribosom). Khác ADN: đường ribose, có U thay T, mạch đơn. Chức năng: tham gia tổng hợp protein, điều hòa gen.",
+            
+            "protein": "Tổng hợp protein gồm 2 giai đoạn:\n1. Phiên mã: ADN → mARN (trong nhân)\n2. Dịch mã: mARN → protein (tại ribosom)\nCác bước: khởi đầu, kéo dài, kết thúc. Mỗi bộ ba mã hóa 1 axit amin.",
+            
+            // Lớp 12: Tiến hóa và sinh thái
+            "tiến hóa": "Tiến hóa là quá trình biến đổi của các loài sinh vật qua thời gian. Cơ chế chính:\n- Đột biến tạo biến dị\n- Chọn lọc tự nhiên\n- Phân ly sinh học\n- Di truyền qua các thế hệ\nBằng chứng: hình thái, phôi học, sinh hóa, hóa thạch.",
+            
+            "darwin": "Thuyết tiến hóa Darwin: Các cá thể có những biến dị có lợi sẽ được chọn lọc tự nhiên ưu tiên, sinh sản nhiều hơn và truyền các tính trạng có lợi cho đời sau. Qua nhiều thế hệ, loài sẽ thay đổi theo hướng thích nghi tốt hơn.",
+            
+            "sinh thái": "Sinh thái học nghiên cứu mối quan hệ giữa sinh vật với sinh vật và với môi trường. Các khái niệm cơ bản: quần thể, quần xã, hệ sinh thái, chuỗi thức ăn, kim tự tháp sinh thái.",
+            
+            "hệ sinh thái": "Hệ sinh thái bao gồm tất cả sinh vật sống và môi trường vô sinh trong một khu vực, có sự trao đổi năng lượng và vật chất. Cấu trúc: sinh vật sản xuất, tiêu thụ bậc 1, bậc 2... và sinh vật phân giải."
+        };
+
+        function findBestMatch(userInput) {
+            const input = userInput.toLowerCase().trim();
+            
+            // Tìm kiếm trực tiếp
+            for (let key in biologyKnowledge) {
+                if (input.includes(key)) {
+                    return biologyKnowledge[key];
+                }
+            }
+            
+            // Tìm kiếm từ khóa liên quan cho tất cả cấp độ
+            
+            // Kiến thức tiểu học
+            if (input.includes('cây cần gì') || input.includes('cây sống')) {
+                return biologyKnowledge['cây'];
+            }
+            
+            if (input.includes('động vật ăn') || input.includes('thức ăn động vật')) {
+                return biologyKnowledge['động vật'] + '\n\n' + biologyKnowledge['dinh dưỡng'];
+            }
+            
+            if (input.includes('cơ thể người') || input.includes('bộ phận cơ thể') || input.includes('5 giác quan')) {
+                return biologyKnowledge['cơ thể'];
+            }
+            
+            if (input.includes('bảo vệ') && input.includes('môi trường')) {
+                return biologyKnowledge['bảo vệ môi trường'];
+            }
+            
+            // Kiến thức THCS
+            if (input.includes('hệ tuần hoàn') || input.includes('tim') || input.includes('máu')) {
+                return biologyKnowledge['tuần hoàn'];
+            }
+            
+            if (input.includes('tiêu hóa') || input.includes('dạ dày') || input.includes('ruột')) {
+                return biologyKnowledge['tiêu hóa'];
+            }
+            
+            if (input.includes('hô hấp') && !input.includes('tế bào')) {
+                return biologyKnowledge['hô hấp'];
+            }
+            
+            if (input.includes('bài tiết') || input.includes('thận') || input.includes('nước tiểu')) {
+                return biologyKnowledge['bài tiết'];
+            }
+            
+            if (input.includes('sinh sản') && input.includes('thực vật')) {
+                return biologyKnowledge['hoa'] + '\n\n' + biologyKnowledge['sinh sản'];
+            }
+            
+            // Kiến thức THPT
+            if (input.includes('phân bào') || input.includes('phân chia tế bào')) {
+                return biologyKnowledge['nguyên phân'] + '\n\n' + biologyKnowledge['giảm phân'];
+            }
+            
+            if (input.includes('di truyền') || input.includes('gen') || input.includes('tính trạng')) {
+                return biologyKnowledge['mendel'];
+            }
+            
+            if (input.includes('protein') || input.includes('tổng hợp')) {
+                return biologyKnowledge['protein'];
+            }
+            
+            if (input.includes('enzyme') || input.includes('xúc tác')) {
+                return biologyKnowledge['enzyme'];
+            }
+            
+            // Tìm kiếm theo cấp độ học
+            if (input.includes('tiểu học') || input.includes('lớp 1') || input.includes('lớp 2') || input.includes('lớp 3') || input.includes('lớp 4') || input.includes('lớp 5')) {
+                return "Kiến thức sinh học tiểu học bao gồm:\n• Nhận biết cây cối, động vật\n• 5 giác quan của con người\n• Chuỗi thức ăn cơ bản\n• Bảo vệ môi trường\n• Sinh sản của sinh vật\n\nBạn có thể hỏi cụ thể về chủ đề nào nhé!";
+            }
+            
+            if (input.includes('trung học cơ sở') || input.includes('thcs') || (input.includes('lớp') && (input.includes('6') || input.includes('7') || input.includes('8') || input.includes('9')))) {
+                return "Kiến thức sinh học THCS bao gồm:\n• Cấu tạo tế bào cơ bản\n• Các cơ quan thực vật (rễ, thân, lá, hoa)\n• Các hệ cơ quan động vật (tiêu hóa, tuần hoàn, hô hấp, bài tiết)\n• Sinh thái học cơ bản\n\nBạn muốn tìm hiểu chủ đề nào?";
+            }
+            
+            if (input.includes('trung học phổ thông') || input.includes('thpt') || (input.includes('lớp') && (input.includes('10') || input.includes('11') || input.includes('12')))) {
+                return "Kiến thức sinh học THPT bao gồm:\n• Tế bào học và sinh lý tế bào\n• Di truyền học và định luật Mendel\n• ADN, ARN và tổng hợp protein\n• Tiến hóa và chọn lọc tự nhiên\n• Sinh thái học và hệ sinh thái\n\nBạn quan tâm đến phần nào?";
+            }
+            
+            return null;
+        }
+
+        function addMessage(content, isUser = false) {
+            const messagesContainer = document.getElementById('chatMessages');
+            const welcomeMessage = messagesContainer.querySelector('.welcome-message');
+            
+            if (welcomeMessage) {
+                welcomeMessage.style.display = 'none';
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isUser ? 'user' : 'bot'}`;
+            
+            const contentDiv = document.createElement('div');
+            contentDiv.className = 'message-content';
+            contentDiv.innerHTML = content.replace(/\n/g, '<br>');
+            
+            messageDiv.appendChild(contentDiv);
+            messagesContainer.insertBefore(messageDiv, document.getElementById('typingIndicator'));
+            
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function showTyping() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            typingIndicator.style.display = 'block';
+            const messagesContainer = document.getElementById('chatMessages');
+            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        }
+
+        function hideTyping() {
+            const typingIndicator = document.getElementById('typingIndicator');
+            typingIndicator.style.display = 'none';
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (message === '') return;
+            
+            addMessage(message, true);
+            input.value = '';
+            
+            showTyping();
+            
+            setTimeout(() => {
+                hideTyping();
+                const response = findBestMatch(message);
+                
+                if (response) {
+                    addMessage(response);
+                } else {
+                    addMessage(`Tôi hiểu bạn muốn hỏi về "${message}". Tuy nhiên, tôi chỉ có thể giúp bạn với các chủ đề sinh học cơ bản như: tế bào học, di truyền học, sinh lý thực động vật, sinh học tổng hợp, tiến hóa, sinh thái học. 
+
+Bạn có thể hỏi lại với từ khóa cụ thể hơn như: "nguyên phân", "định luật Mendel", "quang hợp", "ADN", "tiến hóa", "cấu tạo tế bào", "bảo vệ môi trường", "sinh vật", "thực vật"... 
+
+Hoặc sử dụng các gợi ý ở trên để khám phá kiến thức sinh học! 🧬`);
+                }
+            }, 1000 + Math.random() * 1000);
+        }
+
+        function askQuestion(question) {
+            document.getElementById('chatInput').value = question;
+            sendMessage();
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // Focus vào input khi trang load
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('chatInput').focus();
+        });
+    </script>
+</body>
+</html>
